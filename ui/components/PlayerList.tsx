@@ -13,8 +13,8 @@ export interface PlayersListGame {
 }
 
 export function PlayersList(props: { game: Game; currUserId: string }) {
-  const { players } = props.game;
-  const { currUserId } = props;
+  const { game, currUserId } = props;
+  const { players } = game;
   const [containerSize, setContainerSize] = useState(300); // Default size
 
   // Find the index of the current user
@@ -31,8 +31,12 @@ export function PlayersList(props: { game: Game; currUserId: string }) {
     setContainerSize(Math.min(width, height));
   };
 
+  // When gathering players, leave space for the player circles.
+  // When playing, push them to the edge to make space for cards.
+  const distanceFromEdge = game.status === "gathering-players" ? 60 : 0;
+
   // Calculate radius based on container size
-  const radius = containerSize / 2 - 60; // Leave space for player circles
+  const radius = containerSize / 2 - distanceFromEdge; // Leave space for player circles
 
   return (
     <Container
@@ -69,12 +73,20 @@ export function PlayersList(props: { game: Game; currUserId: string }) {
           ],
         };
 
+        // Calculate the absolute center position relative to the container
+        // containerSize/2 + x, containerSize/2 + y
+        const center = {
+          x: containerSize / 2 + x,
+          y: containerSize / 2 + y,
+        };
+
         return (
           <PlayerCircle
             key={playerId}
             playerId={playerId}
             game={props.game}
             style={style}
+            center={center}
           />
         );
       })}

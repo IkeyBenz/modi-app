@@ -2,14 +2,28 @@ import { Game, isWaitingForPlayers } from "@/functions/src/types";
 import React, { useEffect, useState } from "react";
 import { TouchableOpacity, ViewStyle } from "react-native";
 import { Container, Text } from "../elements";
+import { usePlayerPositionContext } from "./PlayerPositionContext";
 
 export interface PlayerCircleProps {
   playerId: string;
   game: Game;
   style: ViewStyle;
+  center: { x: number; y: number };
 }
 
-export function PlayerCircle({ playerId, game, style }: PlayerCircleProps) {
+export function PlayerCircle({
+  playerId,
+  game,
+  style,
+  center,
+}: PlayerCircleProps) {
+  const { registerPlayerPosition } = usePlayerPositionContext();
+
+  // Register position whenever center changes
+  useEffect(() => {
+    registerPlayerPosition(playerId, { x: center.x, y: center.y });
+  }, [center.x, center.y, playerId, registerPlayerPosition]);
+
   return (
     <PlayerCircleWrapper game={game} style={style} playerId={playerId}>
       <Container
