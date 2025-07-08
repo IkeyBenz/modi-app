@@ -7,9 +7,9 @@ import {
   ViewStyle,
 } from "react-native";
 
+import { LoadingSpinner } from "@/ui/elements/LoadingSpinner";
 import Text from "@/ui/elements/Text";
 import { ColorName, colors } from "@/ui/styles";
-import { LoadingSpinner } from "..";
 
 interface ButtonProps {
   color?: ColorName;

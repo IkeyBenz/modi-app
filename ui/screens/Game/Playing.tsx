@@ -23,27 +23,20 @@ export function GamePlaying(props: { game: ActiveGame }) {
   return (
     <Container style={{ flex: 1, padding: 16 }}>
       {/* Game Header */}
-      <Container style={{ marginBottom: 20 }}>
-        <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 8 }}>
-          Game #{game.gameId}
-        </Text>
-        <Text style={{ fontSize: 16, marginBottom: 4 }}>
+      <Container style={{ marginBottom: 48 }}>
+        <Text size={24}>Game #{game.gameId}</Text>
+        <Text size={16}>
           Round: {game.round} | State: {game.roundState}
         </Text>
-        <Text style={{ fontSize: 14, color: "#666" }}>
+        <Text size={14}>
           Dealer: {game.usernames[game.dealer]} | Active:{" "}
           {game.usernames[game.activePlayer]}
         </Text>
       </Container>
 
       {/* Players List */}
-      <Container style={{ alignItems: "center", marginBottom: 20 }}>
-        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 16 }}>
-          Players ({game.players.length})
-        </Text>
-        <PlayersList game={game} currUserId={currentUserId} />
-      </Container>
 
+      <PlayersList game={game} currUserId={currentUserId} />
 
       {/* Current Player's Card */}
       <Container

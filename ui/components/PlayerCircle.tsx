@@ -1,39 +1,17 @@
+import { Game, isWaitingForPlayers } from "@/functions/src/types";
 import React, { useEffect, useState } from "react";
 import { TouchableOpacity, ViewStyle } from "react-native";
 import { Container, Text } from "../elements";
 
 export interface PlayerCircleProps {
   playerId: string;
-  username: string;
-  lives?: number;
-  roundState?: "pre-deal" | "playing" | "tallying";
+  game: Game;
   style: ViewStyle;
 }
 
-export function PlayerCircle({
-  playerId,
-  username,
-  lives,
-  roundState,
-  style,
-}: PlayerCircleProps) {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (roundState && roundState !== "playing") {
-      setOpen(true);
-    } else {
-      setOpen(false);
-    }
-  }, [roundState]);
-
+export function PlayerCircle({ playerId, game, style }: PlayerCircleProps) {
   return (
-    <TouchableOpacity
-      key={playerId}
-      onPress={() => setOpen((curr) => !curr)}
-      activeOpacity={0.8}
-      style={style}
-    >
+    <PlayerCircleWrapper game={game} style={style} playerId={playerId}>
       <Container
         color="gray"
         style={{
@@ -45,8 +23,48 @@ export function PlayerCircle({
           alignItems: "center",
         }}
       >
-        <Text>{username.slice(0, 2)}</Text>
+        <Text>{game.usernames[playerId].slice(0, 2)}</Text>
       </Container>
+    </PlayerCircleWrapper>
+  );
+}
+
+function PlayerCircleWrapper(
+  props: React.PropsWithChildren<{
+    game: Game;
+    children: React.ReactNode;
+    style: ViewStyle;
+    playerId: string;
+  }>
+) {
+  const { game, children, style, playerId } = props;
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (isWaitingForPlayers(game)) return;
+    const { roundState, round } = game;
+    if (!roundState || !round) return;
+    if (roundState !== "playing" && round > 1) {
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  }, [game]);
+
+  if (isWaitingForPlayers(game))
+    return <Container style={style}>{children}</Container>;
+  const { playerLives, usernames } = game;
+  const lives = playerLives[playerId];
+  const username = usernames[playerId];
+
+  return (
+    <TouchableOpacity
+      key={playerId}
+      onPress={() => setOpen((curr) => !curr)}
+      activeOpacity={0.8}
+      style={style}
+    >
+      {children}
       {open && lives !== undefined && (
         <Container
           color="gray"

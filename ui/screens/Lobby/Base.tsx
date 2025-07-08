@@ -35,7 +35,10 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onJoinGameBtnPressed,
   onBackBtnPressed,
 }) => (
-  <KeyboardAvoidingView behavior="height" style={{ flex: 1, paddingTop: 16 }}>
+  <KeyboardAvoidingView
+    behavior="height"
+    style={{ flex: 1, paddingTop: 32, gap: 16 }}
+  >
     <Container style={{ justifyContent: "center" }}>
       <Container style={{ alignItems: "center" }}>
         <Text size={24}>Game PIN:</Text>
@@ -46,20 +49,14 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
       </Container>
     </Container>
 
-    <Container
-      style={{
-        flex: 7,
-        paddingVertical: 8,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <PlayersList game={game} currUserId={currUserId} />
+    <Container style={{ flex: 1, justifyContent: "center" }}>
+      <Container style={{ aspectRatio: 1 }}>
+        <PlayersList game={game} currUserId={currUserId} />
+      </Container>
     </Container>
 
     <Container
       style={{
-        flex: 1,
         flexDirection: "row",
         alignItems: "center",
         minHeight: 24,

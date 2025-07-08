@@ -1,5 +1,6 @@
-import React from "react";
-import { ViewStyle } from "react-native";
+import { Game } from "@/functions/src/types";
+import React, { useState } from "react";
+import { LayoutChangeEvent, ViewStyle } from "react-native";
 import { Container } from "../elements";
 import { PlayerCircle } from "./PlayerCircle";
 
@@ -8,14 +9,13 @@ export interface PlayersListGame {
   usernames: { [playerId: string]: string };
   playerLives?: { [playerId: string]: number };
   roundState?: "pre-deal" | "playing" | "tallying";
+  round?: number;
 }
 
-export function PlayersList(props: {
-  game: PlayersListGame;
-  currUserId: string;
-}) {
-  const { players, usernames, playerLives, roundState } = props.game;
+export function PlayersList(props: { game: Game; currUserId: string }) {
+  const { players } = props.game;
   const { currUserId } = props;
+  const [containerSize, setContainerSize] = useState(300); // Default size
 
   // Find the index of the current user
   const currentUserIndex = players.indexOf(currUserId);
@@ -26,40 +26,46 @@ export function PlayersList(props: {
   const currentUserAngle = (currentUserIndex * 360) / players.length;
   const rotationDegrees = 90 - currentUserAngle;
 
-  // Calculate dynamic radius based on number of players
-  // Base radius for 2-4 players, scales up for more players
-  const baseRadius = 80;
-  const maxRadius = 140;
-  const radius = Math.min(
-    baseRadius + (players.length - 2) * 3, // Increase by 3px per additional player
-    maxRadius
-  );
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setContainerSize(Math.min(width, height));
+  };
+
+  // Calculate radius based on container size
+  const radius = containerSize / 2 - 60; // Leave space for player circles
 
   return (
     <Container
       color="lightGreen"
       style={{
+        flex: 1,
+        maxWidth: 600,
+        maxHeight: 600,
+        aspectRatio: 1,
+        alignSelf: "center",
         padding: 16,
         borderRadius: 999, // Make it circular
-        width: (radius + 50) * 2, // Container width = 2 * (radius + player circle radius)
-        height: (radius + 50) * 2, // Container height = 2 * (radius + player circle radius)
         position: "relative",
-        transform: [{ rotate: `${rotationDegrees}deg` }],
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "visible",
       }}
+      onLayout={handleLayout}
     >
       {players.map((playerId, index) => {
-        const angle = (index * 2 * Math.PI) / players.length;
-        const x = radius * Math.cos(angle);
-        const y = radius * Math.sin(angle);
+        // Calculate angle with rotation already applied
+        const baseAngle = (index * 2 * Math.PI) / players.length;
+        const rotatedAngle = baseAngle + (rotationDegrees * Math.PI) / 180;
+        const x = radius * Math.cos(rotatedAngle);
+        const y = radius * Math.sin(rotatedAngle);
 
         const style: ViewStyle = {
           position: "absolute",
           left: "50%",
           top: "50%",
           transform: [
-            { translateX: x - 25 },
+            { translateX: x - 25 }, // 25 is half the player circle size
             { translateY: y - 25 },
-            { rotate: `${-rotationDegrees}deg` },
           ],
         };
 
@@ -67,9 +73,7 @@ export function PlayersList(props: {
           <PlayerCircle
             key={playerId}
             playerId={playerId}
-            username={usernames[playerId]}
-            lives={playerLives ? playerLives[playerId] : undefined}
-            roundState={roundState}
+            game={props.game}
             style={style}
           />
         );
