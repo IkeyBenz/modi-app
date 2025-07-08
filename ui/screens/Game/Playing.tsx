@@ -2,9 +2,11 @@ import { ActiveGame } from "@/functions/src/types";
 import { useCurrentCard } from "@/hooks/useCurrentCard";
 import { useUserId } from "@/providers/Auth";
 import { Card } from "@/ui/components/Card";
+import { CardAnimationLayer } from "@/ui/components/CardAnimationLayer";
 import { PlayersList } from "@/ui/components/PlayerList";
 import { Container, Text } from "@/ui/elements";
 import React from "react";
+import { PlayerPositionProvider } from "../../components/PlayerPositionContext";
 import { PlayerControls } from "./PlayerControls";
 
 export function GamePlaying(props: { game: ActiveGame }) {
@@ -34,9 +36,13 @@ export function GamePlaying(props: { game: ActiveGame }) {
         </Text>
       </Container>
 
-      {/* Players List */}
-
-      <PlayersList game={game} currUserId={currentUserId} />
+      {/* Players List + Animation Overlay */}
+      <PlayerPositionProvider>
+        <Container style={{ flex: 1, position: "relative" }}>
+          <PlayersList game={game} currUserId={currentUserId} />
+          <CardAnimationLayer dealerId={game.dealer} actions={[]} />
+        </Container>
+      </PlayerPositionProvider>
 
       {/* Current Player's Card */}
       <Container
