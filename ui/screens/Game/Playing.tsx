@@ -38,7 +38,16 @@ export function GamePlaying(props: { game: ActiveGame }) {
 
       {/* Players List + Animation Overlay */}
       <PlayerPositionProvider>
-        <Container style={{ flex: 1, position: "relative" }}>
+        <Container
+          style={{
+            flex: 1,
+            position: "relative",
+            aspectRatio: 1,
+            maxWidth: 600,
+            maxHeight: 600,
+            alignSelf: "center",
+          }}
+        >
           <PlayersList game={game} currUserId={currentUserId} />
           <CardAnimationLayer dealerId={game.dealer} actions={[]} />
         </Container>

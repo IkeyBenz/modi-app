@@ -4,6 +4,7 @@ import { KeyboardAvoidingView } from "react-native";
 import { InitialGame } from "@/functions/src/types";
 import { PlayersList } from "@/ui/components/PlayerList";
 import { Button, Container, Icon, Text } from "@/ui/elements";
+import { PlayerPositionProvider } from "../../components/PlayerPositionContext";
 
 export interface LobbyScreenProps {
   currUserId: string;
@@ -51,7 +52,9 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
     <Container style={{ flex: 1, justifyContent: "center" }}>
       <Container style={{ aspectRatio: 1 }}>
-        <PlayersList game={game} currUserId={currUserId} />
+        <PlayerPositionProvider>
+          <PlayersList game={game} currUserId={currUserId} />
+        </PlayerPositionProvider>
       </Container>
     </Container>
 
