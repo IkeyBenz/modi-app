@@ -134,9 +134,7 @@ export function createDealCardsAction(
   return {
     type: ActionType.DEAL_CARDS,
     playerId: dealerId,
-    metadata: {
-      dealingOrder
-    }
+    dealingOrder
   };
 }
 
@@ -152,21 +150,13 @@ export function createSwapCardsAction(
   if (isDealerDraw) {
     return {
       type: ActionType.DEALER_DRAW,
-      playerId,
-      metadata: {
-        isDealerDraw: true,
-        swapType: 'dealer-draw'
-      }
+      playerId
     } as Omit<DealerDrawAction, 'id' | 'timestamp'>;
   } else {
     return {
       type: ActionType.SWAP_CARDS,
       playerId,
-      targetPlayerId,
-      metadata: {
-        isDealerDraw: false,
-        swapType: 'player-swap'
-      }
+      targetPlayerId
     } as Omit<SwapCardsAction, 'id' | 'timestamp'>;
   }
 }
@@ -182,10 +172,8 @@ export function createStickAction(
   return {
     type: ActionType.STICK,
     playerId,
-    metadata: {
-      isDealer,
-      action: isDealer ? 'dealer-stick' : 'player-stick'
-    }
+    isDealer,
+    action: isDealer ? 'dealer-stick' : 'player-stick'
   };
 }
 
@@ -202,12 +190,10 @@ export function createEndRoundAction(
   return {
     type: ActionType.END_ROUND,
     playerId: dealerId,
-    metadata: {
-      playersLost,
-      lowestCard,
-      newDealer,
-      roundEnded: true
-    }
+    playersLost,
+    lowestCard,
+    newDealer,
+    roundEnded: true
   };
 }
 
@@ -222,10 +208,8 @@ export function createDeckReshuffleAction(
   return {
     type: ActionType.DECK_RESHUFFLE,
     playerId: triggerPlayerId,
-    metadata: {
-      cardsShuffled,
-      trigger: 'deck-empty'
-    }
+    cardsShuffled,
+    trigger: 'deck-empty'
   };
 }
 
@@ -242,10 +226,8 @@ export function createSpecialEventAction(
     type: ActionType.SPECIAL_EVENT,
     playerId,
     targetPlayerId,
-    metadata: {
-      eventType,
-      specialEvent: true
-    }
+    eventType,
+    specialEvent: true
   };
 }
 
@@ -260,9 +242,7 @@ export function createGameStartedAction(
   return {
     type: ActionType.GAME_STARTED,
     playerId: hostId,
-    metadata: {
-      initialDealer
-    }
+    initialDealer
   };
 }
 
@@ -277,10 +257,8 @@ export function createPlayerJoinedAction(
   return {
     type: ActionType.PLAYER_JOINED,
     playerId,
-    metadata: {
-      username,
-      joinEvent: true
-    }
+    username,
+    joinEvent: true
   };
 }
 
@@ -295,9 +273,7 @@ export function createPlayerLeftAction(
   return {
     type: ActionType.PLAYER_LEFT,
     playerId,
-    metadata: {
-      username,
-      leaveEvent: true
-    }
+    username,
+    leaveEvent: true
   };
 } 
