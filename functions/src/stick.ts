@@ -1,5 +1,6 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { addActionToBatch, createStickAction } from "./actionUtils";
 import { ActiveGame } from "./types";
 
 const db = getFirestore();
@@ -74,9 +75,10 @@ export const stick = onCall<StickRequest, Promise<StickResponse>>(async (request
     const gameRef = gameDoc.ref;
 
     let updateData: Partial<ActiveGame> = {};
+    const isDealer = gameData.dealer === userId;
 
     // Check if the current player is the dealer
-    if (gameData.dealer === userId) {
+    if (isDealer) {
       // Rule 2: If called by the dealer, simply updates the roundState to 'tallying'
       console.debug("Stick: Current player is dealer, updating roundState to tallying");
       updateData = { roundState: "tallying" };
@@ -94,13 +96,24 @@ export const stick = onCall<StickRequest, Promise<StickResponse>>(async (request
       updateData = { activePlayer: nextPlayerId };
     }
 
+    // Use a batch write to ensure atomic updates
+    const batch = db.batch();
+
     // Update the game document
-    await gameRef.update(updateData);
+    batch.update(gameRef, updateData);
+
+    // Add the stick action to the batch
+    const stickAction = createStickAction(gameId, userId, isDealer);
+    const currentActionCount = gameData.actionCount || 0;
+    addActionToBatch(batch, gameId, stickAction, currentActionCount);
+
+    // Commit the batch (all changes including action happen atomically)
+    await batch.commit();
 
     console.info("Stick: Successfully stuck", {
       gameId,
       player: userId,
-      isDealer: gameData.dealer === userId,
+      isDealer,
       updateData
     });
 

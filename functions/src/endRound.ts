@@ -1,5 +1,6 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { addActionToBatch, createEndRoundAction } from "./actionUtils";
 import { ActiveGame, CardID, GameInternalState } from "./types";
 
 const db = getFirestore();
@@ -148,6 +149,9 @@ export const endRound = onCall<EndRoundRequest, Promise<EndRoundResponse>>(async
       .filter(pc => pc.rankValue === lowestRankValue)
       .map(pc => pc.playerId);
 
+    // Find the lowest card details for the action
+    const lowestCard = playerCards.find(pc => pc.rankValue === lowestRankValue)?.card || '';
+
     console.info("EndRound: Players with lowest card", {
       gameId,
       lowestRankValue,
@@ -213,7 +217,18 @@ export const endRound = onCall<EndRoundRequest, Promise<EndRoundResponse>>(async
       batch.set(playerHandRef, { card });
     });
 
-    // Commit the batch
+    // Add the end round action to the batch
+    const endRoundAction = createEndRoundAction(
+      gameId, 
+      userId, 
+      playersWithLowestCard, 
+      lowestCard, 
+      newDealer
+    );
+    const currentActionCount = gameData.actionCount || 0;
+    addActionToBatch(batch, gameId, endRoundAction, currentActionCount);
+
+    // Commit the batch (all changes including action happen atomically)
     await batch.commit();
 
     console.info("EndRound: Round ended successfully", {

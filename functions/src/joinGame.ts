@@ -1,12 +1,13 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { addActionToBatch, createPlayerJoinedAction } from "./actionUtils";
 import { InitialGame } from "./types";
 
 const db = getFirestore();
 
 export interface JoinGameRequest {
-  username: string;
   gameId: string;
+  username: string;
 }
 
 export interface JoinGameResponse {
@@ -21,23 +22,18 @@ export const joinGame = onCall<JoinGameRequest, Promise<JoinGameResponse>>(async
     throw new HttpsError("unauthenticated", "User is not authenticated");
   }
 
-  const { username, gameId } = request.data;
-
-  // Validate request data
-  if (!username || !gameId) {
-    console.error("JoinGame: Missing required fields", { username, gameId });
-    throw new HttpsError("invalid-argument", "Username and gameId are required");
+  const { gameId, username } = request.data;
+  if (!gameId) {
+    console.error("JoinGame: Game ID is required");
+    throw new HttpsError("invalid-argument", "Game ID is required");
   }
 
-  if (typeof username !== "string" || username.trim().length === 0) {
-    console.error("JoinGame: Invalid username", { username });
-    throw new HttpsError("invalid-argument", "Username must be a non-empty string");
+  if (!username || username.trim().length === 0) {
+    console.error("JoinGame: Username is required");
+    throw new HttpsError("invalid-argument", "Username is required");
   }
 
-  if (typeof gameId !== "string" || gameId.trim().length === 0) {
-    console.error("JoinGame: Invalid gameId", { gameId });
-    throw new HttpsError("invalid-argument", "GameId must be a non-empty string");
-  }
+  console.debug("JoinGame: User", userId, "attempting to join game", gameId, "with username", username);
 
   try {
     // Check if game exists
@@ -67,13 +63,23 @@ export const joinGame = onCall<JoinGameRequest, Promise<JoinGameResponse>>(async
       return { success: true, gameId };
     }
 
+    // Use a batch write to ensure atomic updates
+    const batch = db.batch();
+
     // Update the game document
     const updateData: Partial<InitialGame> = {
       players: [...(gameData.players || []), userId],
       usernames: { ...gameData.usernames, [userId]: username.trim() },
     };
+    batch.update(gameRef, updateData);
 
-    await gameRef.update(updateData);
+    // Add the player joined action to the batch
+    const playerJoinedAction = createPlayerJoinedAction(gameId, userId, username.trim());
+    const currentActionCount = (gameData as any).actionCount || 0;
+    addActionToBatch(batch, gameId, playerJoinedAction, currentActionCount);
+
+    // Commit the batch (all changes including action happen atomically)
+    await batch.commit();
 
     console.info("JoinGame: User successfully joined game", { userId, username, gameId });
     return { success: true, gameId };

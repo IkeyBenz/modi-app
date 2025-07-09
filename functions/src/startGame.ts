@@ -1,5 +1,6 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { addActionToBatch, createGameStartedAction } from "./actionUtils";
 import { generateDeck, shuffleDeck } from "./deckUtils";
 import { ActiveGame, CardID, GameInternalState, InitialGame } from "./types";
 
@@ -76,6 +77,7 @@ export const startGame = onCall<StartGameRequest, Promise<StartGameResponse>>(as
       round: 1,
       activePlayer: gameData.host, // Host starts as active player
       roundState: "pre-deal",
+      actionCount: 0, // Initialize action count
     };
 
     // Create internal state document
@@ -107,7 +109,11 @@ export const startGame = onCall<StartGameRequest, Promise<StartGameResponse>>(as
       batch.set(playerHandRef, { card: cardId });
     });
 
-    // Commit the batch
+    // Add the game started action to the batch
+    const gameStartedAction = createGameStartedAction(gameId, userId, gameData.host);
+    addActionToBatch(batch, gameId, gameStartedAction, 0);
+
+    // Commit the batch (all changes including action happen atomically)
     await batch.commit();
 
     console.info("StartGame: Game started successfully", gameId);

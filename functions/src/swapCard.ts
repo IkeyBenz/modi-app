@@ -1,5 +1,6 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { addActionToBatch, createDeckReshuffleAction, createSpecialEventAction, createSwapCardsAction } from "./actionUtils";
 import { shuffleDeck } from "./deckUtils";
 import { ActiveGame, CardID, GameInternalState } from "./types";
 
@@ -130,11 +131,15 @@ export const swapCard = onCall<SwapCardRequest, Promise<SwapCardResponse>>(async
     let newActivePlayer: string | undefined;
     let updatedInternalState: GameInternalState;
     let updatedPlayerHands: { [playerId: string]: CardID | null } = {};
+    let deckReshuffled = false;
+    let isDealerDraw = false;
+    let isKungEvent = false;
 
     // Check if the current player is the dealer
     if (gameData.dealer === userId) {
       // Rule 3: Dealer draws a new card from the deck
       console.debug("SwapCard: Current player is dealer, drawing new card from deck");
+      isDealerDraw = true;
 
       // Check if deck is empty and recycle trash if needed
       let currentDeck = [...internalState.deck];
@@ -149,6 +154,7 @@ export const swapCard = onCall<SwapCardRequest, Promise<SwapCardResponse>>(async
         // Shuffle trash into new deck
         currentDeck = shuffleDeck(currentTrash);
         currentTrash = [];
+        deckReshuffled = true;
         console.info("SwapCard: Recycled trash into new deck", { 
           newDeckSize: currentDeck.length 
         });
@@ -218,6 +224,7 @@ export const swapCard = onCall<SwapCardRequest, Promise<SwapCardResponse>>(async
         newActivePlayer = nextPlayerId;
         updatedInternalState = internalState; // No changes to deck/trash
         updatedPlayerHands = {}; // No changes to hands
+        isKungEvent = true;
 
       } else {
         // Rule 2: Swap cards between current player and next player
@@ -266,7 +273,31 @@ export const swapCard = onCall<SwapCardRequest, Promise<SwapCardResponse>>(async
       });
     }
 
-    // Commit the batch
+    // Add actions to the batch (ensuring atomicity)
+    let currentActionCount = gameData.actionCount || 0;
+
+    if (deckReshuffled) {
+      // Add deck reshuffle action if deck was recycled
+      const reshuffleAction = createDeckReshuffleAction(gameId, userId, internalState.trash.length);
+      addActionToBatch(batch, gameId, reshuffleAction, currentActionCount);
+      currentActionCount++;
+    }
+
+    if (isDealerDraw) {
+      // Add dealer draw action
+      const dealerDrawAction = createSwapCardsAction(gameId, userId, "", undefined, true);
+      addActionToBatch(batch, gameId, dealerDrawAction, currentActionCount);
+    } else if (isKungEvent) {
+      // Add Kung special event action
+      const kungAction = createSpecialEventAction(gameId, userId, 'kung', newActivePlayer);
+      addActionToBatch(batch, gameId, kungAction, currentActionCount);
+    } else {
+      // Add regular swap action
+      const swapAction = createSwapCardsAction(gameId, userId, newActivePlayer!);
+      addActionToBatch(batch, gameId, swapAction, currentActionCount);
+    }
+
+    // Commit the batch (all changes including actions happen atomically)
     await batch.commit();
 
     console.info("SwapCard: Card swap completed successfully", {
@@ -274,7 +305,10 @@ export const swapCard = onCall<SwapCardRequest, Promise<SwapCardResponse>>(async
       currentPlayer: userId,
       isDealer: gameData.dealer === userId,
       newActivePlayer: gameData.dealer === userId ? undefined : newActivePlayer,
-      roundState: gameData.dealer === userId ? "tallying" : gameData.roundState
+      roundState: gameData.dealer === userId ? "tallying" : gameData.roundState,
+      deckReshuffled,
+      isDealerDraw,
+      isKungEvent,
     });
 
     return { success: true };

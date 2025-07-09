@@ -103,17 +103,7 @@ export function GamePlaying(props: { game: ActiveGame }) {
       <Container
         style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
       >
-        <Animated.View
-          style={{
-            transform: [
-              { translateX: mainCardTranslateX },
-              { scale: mainCardScale },
-            ],
-            opacity: mainCardOpacity,
-          }}
-        >
-          <Card cardId={currentCard} width={120} height={180} />
-        </Animated.View>
+        <Card cardId={currentCard} width={120} height={180} />
       </Container>
 
       {/* Game Status */}

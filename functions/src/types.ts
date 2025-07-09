@@ -16,6 +16,9 @@ export interface ActiveGame extends GameBase {
   round: number;
   activePlayer: string;
   roundState: 'pre-deal' | 'playing' | 'tallying';
+  // Action tracking fields
+  lastActionId?: string;
+  actionCount: number;
 }
 
 interface EndedGame extends Omit<ActiveGame, 'status'> {
@@ -35,7 +38,6 @@ export interface PlayerHand {
   playerId: string;
 }
 
-
 export type CardRank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 export type CardSuit = 'H' | 'D' | 'C' | 'S';
 export type CardID = `${CardRank}${CardSuit}`;
@@ -53,3 +55,6 @@ export function isActive(game: Game): game is ActiveGame {
 export function isEnded(game: Game): game is EndedGame {
   return game.status === 'ended';
 }
+
+// Re-export action types for convenience
+export * from './actions.types';

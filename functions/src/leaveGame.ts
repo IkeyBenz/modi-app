@@ -1,5 +1,6 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { addActionToBatch, createPlayerLeftAction } from "./actionUtils";
 import { InitialGame } from "./types";
 
 const db = getFirestore();
@@ -41,6 +42,12 @@ export const leaveGame = onCall<LeaveGameRequest, Promise<LeaveGameResponse>>(as
       throw new HttpsError("failed-precondition", "Host cannot leave the game. Transfer host or end the game instead.");
     }
 
+    // Get the username before removing it
+    const username = gameData.usernames?.[userId] || "Unknown Player";
+
+    // Use a batch write to ensure atomic updates
+    const batch = db.batch();
+
     // Remove user from the game
     const updatedPlayers = gameData.players.filter((playerId: string) => playerId !== userId);
     const updateData: Partial<InitialGame> = {
@@ -53,9 +60,17 @@ export const leaveGame = onCall<LeaveGameRequest, Promise<LeaveGameResponse>>(as
       updateData.usernames = remainingPlayerInfo;
     }
 
-    await gameDoc.ref.update(updateData);
+    batch.update(gameDoc.ref, updateData);
 
-    console.info("LeaveGame: User successfully left game", { userId, gameId });
+    // Add the player left action to the batch
+    const playerLeftAction = createPlayerLeftAction(gameId, userId, username);
+    const currentActionCount = (gameData as any).actionCount || 0;
+    addActionToBatch(batch, gameId, playerLeftAction, currentActionCount);
+
+    // Commit the batch (all changes including action happen atomically)
+    await batch.commit();
+
+    console.info("LeaveGame: User successfully left game", { userId, gameId, username });
     return { success: true, gameId };
 
   } catch (error) {

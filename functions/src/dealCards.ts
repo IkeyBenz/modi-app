@@ -1,5 +1,6 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { addActionToBatch, createDealCardsAction, createDeckReshuffleAction } from "./actionUtils";
 import { shuffleDeck } from "./deckUtils";
 import { ActiveGame, CardID, GameInternalState } from "./types";
 
@@ -78,6 +79,7 @@ export const dealCards = onCall<DealCardsRequest, Promise<DealCardsResponse>>(as
     // Check if deck is empty and recycle trash if needed
     let currentDeck = [...internalState.deck];
     let currentTrash = [...internalState.trash];
+    let deckReshuffled = false;
     
     if (currentDeck.length === 0) {
       if (currentTrash.length === 0) {
@@ -88,6 +90,7 @@ export const dealCards = onCall<DealCardsRequest, Promise<DealCardsResponse>>(as
       // Shuffle trash into new deck
       currentDeck = shuffleDeck(currentTrash);
       currentTrash = [];
+      deckReshuffled = true;
       console.info("DealCards: Recycled trash into new deck", { 
         newDeckSize: currentDeck.length 
       });
@@ -121,7 +124,7 @@ export const dealCards = onCall<DealCardsRequest, Promise<DealCardsResponse>>(as
     // Deal one card to each player in order
     const updatedPlayerHands: { [playerId: string]: CardID } = {};
 
-    dealingOrder.forEach(playerId => {
+    dealingOrder.forEach((playerId) => {
       // Check if deck is empty and recycle trash if needed
       if (currentDeck.length === 0) {
         if (currentTrash.length === 0) {
@@ -132,6 +135,7 @@ export const dealCards = onCall<DealCardsRequest, Promise<DealCardsResponse>>(as
         // Shuffle trash into new deck
         currentDeck = shuffleDeck(currentTrash);
         currentTrash = [];
+        deckReshuffled = true;
         console.info("DealCards: Recycled trash into new deck during dealing", { 
           newDeckSize: currentDeck.length 
         });
@@ -178,7 +182,21 @@ export const dealCards = onCall<DealCardsRequest, Promise<DealCardsResponse>>(as
       batch.set(playerHandRef, { card });
     });
 
-    // Commit the batch
+    // Add actions to the batch (ensuring atomicity)
+    let currentActionCount = gameData.actionCount || 0;
+
+    if (deckReshuffled) {
+      // Add deck reshuffle action if deck was recycled
+      const reshuffleAction = createDeckReshuffleAction(gameId, userId, currentTrash.length);
+      addActionToBatch(batch, gameId, reshuffleAction, currentActionCount);
+      currentActionCount++;
+    }
+
+    // Add deal cards action
+    const dealCardsAction = createDealCardsAction(gameId, userId, dealingOrder);
+    addActionToBatch(batch, gameId, dealCardsAction, currentActionCount);
+
+    // Commit the batch (all changes including actions happen atomically)
     await batch.commit();
 
     console.info("DealCards: Cards dealt successfully", {
@@ -187,6 +205,7 @@ export const dealCards = onCall<DealCardsRequest, Promise<DealCardsResponse>>(as
       playersDealt: dealingOrder.length,
       cardsRemaining: currentDeck.length,
       newActivePlayer,
+      deckReshuffled,
     });
 
     return { success: true };
