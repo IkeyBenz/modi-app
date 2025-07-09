@@ -63,7 +63,7 @@ export const leaveGame = onCall<LeaveGameRequest, Promise<LeaveGameResponse>>(as
     batch.update(gameDoc.ref, updateData);
 
     // Add the player left action to the batch
-    const playerLeftAction = createPlayerLeftAction(gameId, userId, username);
+    const playerLeftAction = createPlayerLeftAction(userId, username);
     const currentActionCount = (gameData as any).actionCount || 0;
     addActionToBatch(batch, gameId, playerLeftAction, currentActionCount);
 

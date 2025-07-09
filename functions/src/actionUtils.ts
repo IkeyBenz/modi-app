@@ -120,14 +120,13 @@ async function getCurrentActionCount(gameId: string): Promise<number> {
  * Generates a unique action ID
  */
 function generateActionId(): string {
-  return `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `action_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
 /**
  * Helper function to create a deal cards action
  */
 export function createDealCardsAction(
-  gameId: string,
   dealerId: string,
   dealingOrder: string[]
 ): Omit<DealCardsAction, 'id' | 'timestamp'> {
@@ -142,7 +141,6 @@ export function createDealCardsAction(
  * Helper function to create a swap cards action
  */
 export function createSwapCardsAction(
-  gameId: string,
   playerId: string,
   targetPlayerId: string,
   isDealerDraw: boolean = false
@@ -165,7 +163,6 @@ export function createSwapCardsAction(
  * Helper function to create a stick action
  */
 export function createStickAction(
-  gameId: string,
   playerId: string,
   isDealer: boolean
 ): Omit<StickAction, 'id' | 'timestamp'> {
@@ -181,7 +178,6 @@ export function createStickAction(
  * Helper function to create an end round action
  */
 export function createEndRoundAction(
-  gameId: string,
   dealerId: string,
   playersLost: string[],
   lowestCard: string,
@@ -201,7 +197,6 @@ export function createEndRoundAction(
  * Helper function to create a deck reshuffle action
  */
 export function createDeckReshuffleAction(
-  gameId: string,
   triggerPlayerId: string,
   cardsShuffled: number
 ): Omit<DeckReshuffleAction, 'id' | 'timestamp'> {
@@ -217,7 +212,6 @@ export function createDeckReshuffleAction(
  * Helper function to create a special event action
  */
 export function createSpecialEventAction(
-  gameId: string,
   playerId: string,
   eventType: 'modi' | 'dirty-dan' | 'kung',
   targetPlayerId?: string
@@ -235,7 +229,6 @@ export function createSpecialEventAction(
  * Helper function to create a game started action
  */
 export function createGameStartedAction(
-  gameId: string,
   hostId: string,
   initialDealer: string
 ): Omit<GameStartedAction, 'id' | 'timestamp'> {
@@ -250,7 +243,6 @@ export function createGameStartedAction(
  * Helper function to create a player joined action
  */
 export function createPlayerJoinedAction(
-  gameId: string,
   playerId: string,
   username: string
 ): Omit<PlayerJoinedAction, 'id' | 'timestamp'> {
@@ -266,7 +258,6 @@ export function createPlayerJoinedAction(
  * Helper function to create a player left action
  */
 export function createPlayerLeftAction(
-  gameId: string,
   playerId: string,
   username: string
 ): Omit<PlayerLeftAction, 'id' | 'timestamp'> {

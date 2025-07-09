@@ -74,7 +74,7 @@ export const joinGame = onCall<JoinGameRequest, Promise<JoinGameResponse>>(async
     batch.update(gameRef, updateData);
 
     // Add the player joined action to the batch
-    const playerJoinedAction = createPlayerJoinedAction(gameId, userId, username.trim());
+    const playerJoinedAction = createPlayerJoinedAction(userId, username.trim());
     const currentActionCount = (gameData as any).actionCount || 0;
     addActionToBatch(batch, gameId, playerJoinedAction, currentActionCount);
 

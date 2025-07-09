@@ -187,13 +187,13 @@ export const dealCards = onCall<DealCardsRequest, Promise<DealCardsResponse>>(as
 
     if (deckReshuffled) {
       // Add deck reshuffle action if deck was recycled
-      const reshuffleAction = createDeckReshuffleAction(gameId, userId, currentTrash.length);
+      const reshuffleAction = createDeckReshuffleAction(userId, currentTrash.length);
       addActionToBatch(batch, gameId, reshuffleAction, currentActionCount);
       currentActionCount++;
     }
 
     // Add deal cards action
-    const dealCardsAction = createDealCardsAction(gameId, userId, dealingOrder);
+    const dealCardsAction = createDealCardsAction(userId, dealingOrder);
     addActionToBatch(batch, gameId, dealCardsAction, currentActionCount);
 
     // Commit the batch (all changes including actions happen atomically)

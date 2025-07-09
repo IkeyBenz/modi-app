@@ -110,7 +110,7 @@ export const startGame = onCall<StartGameRequest, Promise<StartGameResponse>>(as
     });
 
     // Add the game started action to the batch
-    const gameStartedAction = createGameStartedAction(gameId, userId, gameData.host);
+    const gameStartedAction = createGameStartedAction(userId, gameData.host);
     addActionToBatch(batch, gameId, gameStartedAction, 0);
 
     // Commit the batch (all changes including action happen atomically)

@@ -103,7 +103,7 @@ export const stick = onCall<StickRequest, Promise<StickResponse>>(async (request
     batch.update(gameRef, updateData);
 
     // Add the stick action to the batch
-    const stickAction = createStickAction(gameId, userId, isDealer);
+    const stickAction = createStickAction(userId, isDealer);
     const currentActionCount = gameData.actionCount || 0;
     addActionToBatch(batch, gameId, stickAction, currentActionCount);
 

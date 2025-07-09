@@ -219,7 +219,6 @@ export const endRound = onCall<EndRoundRequest, Promise<EndRoundResponse>>(async
 
     // Add the end round action to the batch
     const endRoundAction = createEndRoundAction(
-      gameId, 
       userId, 
       playersWithLowestCard, 
       lowestCard, 

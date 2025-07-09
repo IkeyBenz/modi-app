@@ -278,22 +278,22 @@ export const swapCard = onCall<SwapCardRequest, Promise<SwapCardResponse>>(async
 
     if (deckReshuffled) {
       // Add deck reshuffle action if deck was recycled
-      const reshuffleAction = createDeckReshuffleAction(gameId, userId, internalState.trash.length);
+      const reshuffleAction = createDeckReshuffleAction(userId, internalState.trash.length);
       addActionToBatch(batch, gameId, reshuffleAction, currentActionCount);
       currentActionCount++;
     }
 
     if (isDealerDraw) {
       // Add dealer draw action
-      const dealerDrawAction = createSwapCardsAction(gameId, userId, "", undefined, true);
+      const dealerDrawAction = createSwapCardsAction(userId, "", true);
       addActionToBatch(batch, gameId, dealerDrawAction, currentActionCount);
     } else if (isKungEvent) {
       // Add Kung special event action
-      const kungAction = createSpecialEventAction(gameId, userId, 'kung', newActivePlayer);
+      const kungAction = createSpecialEventAction(userId, 'kung', newActivePlayer);
       addActionToBatch(batch, gameId, kungAction, currentActionCount);
     } else {
       // Add regular swap action
-      const swapAction = createSwapCardsAction(gameId, userId, newActivePlayer!);
+      const swapAction = createSwapCardsAction(userId, newActivePlayer!);
       addActionToBatch(batch, gameId, swapAction, currentActionCount);
     }
 
