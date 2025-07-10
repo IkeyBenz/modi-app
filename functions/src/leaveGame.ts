@@ -38,8 +38,31 @@ export const leaveGame = onCall<LeaveGameRequest, Promise<LeaveGameResponse>>(as
 
     // Check if user is the host
     if (gameData.host === userId) {
+      if (gameData.players.length === 1) {
+        console.info(
+          "LeaveGame: Host leaving empty game, deleting in 10s",
+          { userId, gameId }
+        );
+        // Delay deletion slightly so client can finish leaving without race conditions
+        const timer = setTimeout(() => {
+          gameDoc.ref
+            .delete()
+            .catch((err) =>
+              console.error("LeaveGame: Failed delayed delete", { gameId, err })
+            );
+        }, 10_000);
+        // Avoid keeping the function open while waiting for the timeout
+        // in case the runtime supports it.
+        if (typeof timer.unref === "function") {
+          timer.unref();
+        }
+        return { success: true, gameId };
+      }
       console.error("LeaveGame: Host cannot leave game", { userId, gameId });
-      throw new HttpsError("failed-precondition", "Host cannot leave the game. Transfer host or end the game instead.");
+      throw new HttpsError(
+        "failed-precondition",
+        "Host cannot leave the game. Transfer host or end the game instead."
+      );
     }
 
     // Get the username before removing it
