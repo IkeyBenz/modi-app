@@ -20,7 +20,7 @@ export function CardTable({ children, onLayout }: CardTableProps) {
 
   return (
     <Container
-      color="lightGreen"
+      color="white"
       style={{
         aspectRatio: 1,
         borderRadius: 999,
