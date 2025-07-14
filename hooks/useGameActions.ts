@@ -1,19 +1,20 @@
 import { firestore } from "@/config/firebase";
 import { ActionType, GameAction } from "@/functions/src/actions.types";
-import { CardsRef } from "@/ui/components/CardTable";
 import { collection, onSnapshot, orderBy, query, startAfter } from "firebase/firestore";
 import { useEffect, useRef } from "react";
 
-interface UseGameActionsProps {
-  gameId: string;
-  cardsRef: React.RefObject<CardsRef | null>;
+interface GameActionHandlers {
+  dealCards(toPlayers: string[]): void;
+  swapCards(fromPlayerId: string, toPlayerId: string): void;
+  trashCards(): void;
+  revealCards(playerCards: { [playerId: string]: string }): void;
 }
 
-export function useGameActions({ gameId, cardsRef }: UseGameActionsProps) {
+export function useGameActions(gameId: string, handlers: GameActionHandlers) {
   const lastActionId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!gameId || !cardsRef.current) return;
+    if (!gameId) return;
 
     // Subscribe to actions after the last seen action
     const actionsRef = collection(firestore, "games", gameId, "actions");
@@ -32,26 +33,26 @@ export function useGameActions({ gameId, cardsRef }: UseGameActionsProps) {
     });
 
     return unsubscribe;
-  }, [gameId, cardsRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId]);
 
   const handleAction = (action: GameAction) => {
     console.log("action", action);
-    if (!cardsRef.current) return;
 
     switch (action.type) {
       case ActionType.DEAL_CARDS:
         // Trigger deal cards animation
-        cardsRef.current.dealCards(action.dealingOrder);
+        handlers.dealCards(action.dealingOrder);
         break;
 
       case ActionType.SWAP_CARDS:
         // Trigger swap cards animation
-        cardsRef.current.swapCards(action.playerId, action.targetPlayerId);
+        handlers.swapCards(action.playerId, action.targetPlayerId);
         break;
 
       case ActionType.REVEAL_CARDS:
         // Trigger reveal cards animation
-        cardsRef.current.revealCards(action.playerCards);
+        handlers.revealCards(action.playerCards);
         break;
 
       // Add other action types as needed
@@ -60,7 +61,7 @@ export function useGameActions({ gameId, cardsRef }: UseGameActionsProps) {
         break;
 
       case ActionType.END_ROUND:
-        return cardsRef.current.trashCards();
+        return handlers.trashCards();
 
       default:
         // Handle other action types

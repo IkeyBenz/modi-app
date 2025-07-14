@@ -45,24 +45,3 @@ export function CardTable({ children, onLayout }: CardTableProps) {
     </Container>
   );
 }
-
-// Export all components and types for easy importing
-export { AnimatedCards } from "./AnimatedCards";
-export { CardDeck } from "./CardDeck";
-export { useCardTable } from "./context";
-export { useCardAnimations } from "./hooks/useCardAnimations";
-export { PlayerCircles } from "./PlayerCircles";
-export { DEFAULT_CARD_TABLE_CONFIG } from "./types";
-export type {
-  CardAnimationValue,
-  CardPosition,
-  CardsRef,
-  CardTableConfig,
-  Player,
-  PlayerPosition,
-} from "./types";
-export {
-  calculatePlayerPositions,
-  degreesToRadians,
-  radiansToDegrees,
-} from "./utils";

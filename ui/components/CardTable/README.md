@@ -31,36 +31,22 @@ import { PlayerCircles } from "@/ui/components/CardTable";
 />
 ```
 
-### AnimatedCards
-Handles card animations including dealing and swapping. Uses a ref to expose animation methods.
+### CardTableAnimatableDeck
+Handles card animations including dealing and swapping, replacing both AnimatedCards and CardDeck. Uses a ref to expose animation methods.
 
 ```tsx
-import { AnimatedCards, CardsRef } from "@/ui/components/CardTable";
+import { CardTableAnimatableDeck, CardsRef } from "@/ui/components/CardTable";
 
 const cardsRef = useRef<CardsRef>(null);
 
-<AnimatedCards 
+<CardTableAnimatableDeck 
   dealerId="2" 
   ref={cardsRef}
-  config={customConfig} // Optional
 />
 
 // Trigger animations
 cardsRef.current?.dealCards(["1", "2", "3", "4"]);
 cardsRef.current?.swapCards("1", "2");
-```
-
-### CardDeck
-Renders the deck at a position relative to the dealer.
-
-```tsx
-import { CardDeck } from "@/ui/components/CardTable";
-
-<CardDeck 
-  dealerId="2" 
-  onLayout={(position) => console.log('Deck position:', position)}
-  distanceFromDealer={100} // Optional, defaults to 100
-/>
 ```
 
 ## Configuration
@@ -108,9 +94,9 @@ import { Button } from "@/ui/elements";
 import { 
   CardTable, 
   PlayerCircles, 
-  AnimatedCards, 
+  CardTableAnimatableDeck, 
   CardsRef,
-  DEFAULT_CARD_TABLE_CONFIG 
+  CARD_TABLE_CONFIG 
 } from "@/ui/components/CardTable";
 
 const players = [
@@ -132,7 +118,7 @@ export function GameTable() {
   return (
     <CardTable>
       <PlayerCircles players={players} currentUserId="1" />
-      <AnimatedCards dealerId="2" ref={cardsRef} config={customConfig} />
+      <CardTableAnimatableDeck dealerId="2" ref={cardsRef} />
     </CardTable>
   );
 }

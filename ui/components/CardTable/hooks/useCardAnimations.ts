@@ -1,147 +1,129 @@
 import { useCallback } from "react";
 import { Animated } from "react-native";
 import { useCardTable } from "../context";
-import { CARD_TABLE_CONFIG, PlayerPosition } from "../types";
+import { CARD_TABLE_CONFIG, CardAnimationValue, PlayerPosition } from "../types";
 import { degreesToRadians } from "../utils";
-import { useCardAnimationState } from "./useCardAnimationState";
 
-export function useCardAnimations() {
+// Accepts cardAnimationValues from AnimatableCardDeck
+export function useAnimatableCardDeckAnimations(cardAnimationValues: CardAnimationValue[]) {
   const { playerPositions } = useCardTable();
-  const animationState = useCardAnimationState();
 
   const dealCards = useCallback(
     (toPlayers: string[], deckPosition: PlayerPosition | null) => {
-      if (!deckPosition) {
-        console.warn("No deck position set");
-        return;
-      }
-
-      animationState.cardDealOrder.current = [...toPlayers];
-      animationState.cardPositions.current = [];
-
-      // Initialize and draw all the cards at the start position, on top of the deck
-      const startingAnimationValues = toPlayers.map((playerId) => {
-        return {
-          x: new Animated.Value(deckPosition.x),
-          y: new Animated.Value(deckPosition.y),
-          rotation: new Animated.Value(deckPosition.rotation),
-          playerId,
-          backOpacity: new Animated.Value(1),
-          faceOpacity: new Animated.Value(0),
-          skew: new Animated.Value(0),
-        };
-      });
-      animationState.setCardAnimationValues(startingAnimationValues);
-
-      const animations = startingAnimationValues.map((value, index) => {
-        const toXValue =
-          playerPositions[toPlayers[index]].x +
-          Math.cos(
-            degreesToRadians(playerPositions[toPlayers[index]].rotation - 90)
-          ) *
+      if (!deckPosition || !cardAnimationValues) return;
+      // Animate each card from deckPosition to player position
+      const animations: Animated.CompositeAnimation[] = toPlayers.map((playerId, i) => {
+        const card = cardAnimationValues[i];
+        const playerPos = playerPositions[playerId];
+        if (!card || !playerPos) return null;
+        const toX =
+          playerPos.x +
+          Math.cos(degreesToRadians(playerPos.rotation - 90)) *
             CARD_TABLE_CONFIG.cardDistanceFromPlayer;
-        const toYValue =
-          playerPositions[toPlayers[index]].y +
-          Math.sin(
-            degreesToRadians(playerPositions[toPlayers[index]].rotation - 90)
-          ) *
+        const toY =
+          playerPos.y +
+          Math.sin(degreesToRadians(playerPos.rotation - 90)) *
             CARD_TABLE_CONFIG.cardDistanceFromPlayer;
-        const toRotationValue = playerPositions[toPlayers[index]].rotation;
-
-        animationState.cardPositions.current.push({
-          x: toXValue,
-          y: toYValue,
-          rotation: toRotationValue,
-        });
-
+        const toRotation = playerPos.rotation;
         return Animated.parallel([
-          Animated.timing(value.x, {
-            toValue: toXValue,
+          Animated.timing(card.x, {
+            toValue: toX,
             duration: CARD_TABLE_CONFIG.dealAnimationDuration,
             useNativeDriver: true,
           }),
-          Animated.timing(value.y, {
-            toValue: toYValue,
+          Animated.timing(card.y, {
+            toValue: toY,
             duration: CARD_TABLE_CONFIG.dealAnimationDuration,
             useNativeDriver: true,
           }),
-          Animated.timing(value.rotation, {
-            toValue: toRotationValue,
+          Animated.timing(card.rotation, {
+            toValue: toRotation,
             duration: CARD_TABLE_CONFIG.dealAnimationDuration,
             useNativeDriver: true,
           }),
         ]);
-      });
-
-      Animated.stagger(CARD_TABLE_CONFIG.dealStaggerDelay, animations).start();
+      }).filter((a): a is Animated.CompositeAnimation => a !== null);
+      if (animations.length > 0) {
+        Animated.stagger(CARD_TABLE_CONFIG.dealStaggerDelay, animations).start();
+      }
     },
-    [playerPositions, animationState]
+    [cardAnimationValues, playerPositions]
   );
 
   const swapCards = useCallback(
     (player1: string, player2: string) => {
-      const player1Index = animationState.cardDealOrder.current.indexOf(player1);
-      const player1CardPosition = animationState.cardPositions.current[player1Index];
-      const player1CardAnimationValue = animationState.cardAnimationValues[player1Index];
-
-      const player2Index = animationState.cardDealOrder.current.indexOf(player2);
-      const player2CardPosition = animationState.cardPositions.current[player2Index];
-      const player2CardAnimationValue = animationState.cardAnimationValues[player2Index];
-
+      if (!cardAnimationValues) return;
+      const player1Index = cardAnimationValues.findIndex(
+        (c: CardAnimationValue) => c.playerId === player1
+      );
+      const player2Index = cardAnimationValues.findIndex(
+        (c: CardAnimationValue) => c.playerId === player2
+      );
+      if (player1Index === -1 || player2Index === -1) return;
+      const card1 = cardAnimationValues[player1Index];
+      const card2 = cardAnimationValues[player2Index];
+      if (!card1 || !card2) return;
+      const pos1 = playerPositions[player1];
+      const pos2 = playerPositions[player2];
+      if (!pos1 || !pos2) return;
+      const toX1 =
+        pos2.x +
+        Math.cos(degreesToRadians(pos2.rotation - 90)) * CARD_TABLE_CONFIG.cardDistanceFromPlayer;
+      const toY1 =
+        pos2.y +
+        Math.sin(degreesToRadians(pos2.rotation - 90)) * CARD_TABLE_CONFIG.cardDistanceFromPlayer;
+      const toRot1 = pos2.rotation;
+      const toX2 =
+        pos1.x +
+        Math.cos(degreesToRadians(pos1.rotation - 90)) * CARD_TABLE_CONFIG.cardDistanceFromPlayer;
+      const toY2 =
+        pos1.y +
+        Math.sin(degreesToRadians(pos1.rotation - 90)) * CARD_TABLE_CONFIG.cardDistanceFromPlayer;
+      const toRot2 = pos1.rotation;
       Animated.parallel([
         Animated.parallel([
-          Animated.timing(player1CardAnimationValue.x, {
-            toValue: player2CardPosition.x,
+          Animated.timing(card1.x, {
+            toValue: toX1,
             duration: CARD_TABLE_CONFIG.swapAnimationDuration,
             useNativeDriver: true,
           }),
-          Animated.timing(player1CardAnimationValue.y, {
-            toValue: player2CardPosition.y,
+          Animated.timing(card1.y, {
+            toValue: toY1,
             duration: CARD_TABLE_CONFIG.swapAnimationDuration,
             useNativeDriver: true,
           }),
-          Animated.timing(player1CardAnimationValue.rotation, {
-            toValue: player2CardPosition.rotation,
+          Animated.timing(card1.rotation, {
+            toValue: toRot1,
             duration: CARD_TABLE_CONFIG.swapAnimationDuration,
             useNativeDriver: true,
           }),
         ]),
         Animated.parallel([
-          Animated.timing(player2CardAnimationValue.x, {
-            toValue: player1CardPosition.x,
+          Animated.timing(card2.x, {
+            toValue: toX2,
             duration: CARD_TABLE_CONFIG.swapAnimationDuration,
             useNativeDriver: true,
           }),
-          Animated.timing(player2CardAnimationValue.y, {
-            toValue: player1CardPosition.y,
+          Animated.timing(card2.y, {
+            toValue: toY2,
             duration: CARD_TABLE_CONFIG.swapAnimationDuration,
             useNativeDriver: true,
           }),
-          Animated.timing(player2CardAnimationValue.rotation, {
-            toValue: player1CardPosition.rotation,
+          Animated.timing(card2.rotation, {
+            toValue: toRot2,
             duration: CARD_TABLE_CONFIG.swapAnimationDuration,
             useNativeDriver: true,
           }),
         ]),
       ]).start();
-
-      // Update the order tracking
-      animationState.cardDealOrder.current[player1Index] = player2;
-      animationState.cardDealOrder.current[player2Index] = player1;
-
-      // Update the position tracking to match the new order
-      const tempPosition = animationState.cardPositions.current[player1Index];
-      animationState.cardPositions.current[player1Index] = animationState.cardPositions.current[player2Index];
-      animationState.cardPositions.current[player2Index] = tempPosition;
     },
-    [animationState]
+    [cardAnimationValues, playerPositions]
   );
 
-  /** Moves all cards from players hands to the trash, in the middle of the table. */
   const trashCards = useCallback(() => {
-    
-    const animations = animationState.cardAnimationValues.map(({ x, y, rotation }) => {
-      return Animated.parallel([
+    if (!cardAnimationValues) return;
+    const animations: Animated.CompositeAnimation[] = cardAnimationValues.map(({ x, y, rotation }: CardAnimationValue) =>
+      Animated.parallel([
         Animated.timing(x, {
           toValue: 0,
           duration: 500,
@@ -157,31 +139,20 @@ export function useCardAnimations() {
           duration: 500,
           useNativeDriver: true,
         }),
-      ]);
-    });
-
+      ])
+    );
     Animated.stagger(200, animations).start();
+  }, [cardAnimationValues]);
 
-    animationState.cardDealOrder.current = [];
-    animationState.cardPositions.current = [];
-  }, [animationState.cardAnimationValues, animationState.cardDealOrder, animationState.cardPositions]);
-
-  /** Reveals all cards by flipping them to show their faces. */
+  // Placeholder for revealCards
   const revealCards = useCallback((playerCards: { [playerId: string]: string }) => {
-    const { cardAnimationValues, cardDealOrder, cardPositions } = animationState;
-    
-    const animations = cardDealOrder.current.map((playerId) => {
-      
-    })
-
-  }, [animationState]);
+    // Implement as needed
+  }, []);
 
   return {
-    cardAnimationValues: animationState.cardAnimationValues,
     dealCards,
     swapCards,
     trashCards,
     revealCards,
-    resetState: animationState.resetState,
   };
 } 

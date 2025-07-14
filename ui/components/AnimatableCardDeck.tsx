@@ -112,8 +112,8 @@ const AnimatableCard = React.forwardRef<AnimatableCardRef, AnimatableCardProps>(
           height,
           position: "absolute",
           transform: [
-            // { translateX: "-50%" },
-            // { translateY: "-50%" },
+            { translateX: "-50%" },
+            { translateY: "-50%" },
             { translateX: x },
             { translateY: y },
             {
