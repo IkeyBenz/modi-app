@@ -13,7 +13,6 @@ import {
   PlayerLeftAction,
   ReceiveCardAction,
   RevealCardsAction,
-  SpecialEventAction,
   StickAction,
   SwapCardsAction
 } from "./types/actions.types";
@@ -175,19 +174,10 @@ export function createStickAction(
 /**
  * Helper function to create an end round action
  */
-export function createEndRoundAction(
-  dealerId: string,
-  playersLost: string[],
-  lowestCard: string,
-  newDealer: string
-): Omit<EndRoundAction, 'id' | 'timestamp'> {
+export function createEndRoundAction(action: Omit<EndRoundAction, 'id' | 'timestamp' | 'type'>): Omit<EndRoundAction, 'id' | 'timestamp'> {
   return {
     type: ActionType.END_ROUND,
-    playerId: dealerId,
-    playersLost,
-    lowestCard,
-    newDealer,
-    roundEnded: true
+    ...action,
   };
 }
 
@@ -203,23 +193,6 @@ export function createDeckReshuffleAction(
     playerId: triggerPlayerId,
     cardsShuffled,
     trigger: 'deck-empty'
-  };
-}
-
-/**
- * Helper function to create a special event action
- */
-export function createSpecialEventAction(
-  playerId: string,
-  eventType: 'modi' | 'dirty-dan',
-  targetPlayerId?: string
-): Omit<SpecialEventAction, 'id' | 'timestamp'> {
-  return {
-    type: ActionType.SPECIAL_EVENT,
-    playerId,
-    targetPlayerId,
-    eventType,
-    specialEvent: true
   };
 }
 

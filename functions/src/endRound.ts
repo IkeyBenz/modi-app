@@ -149,9 +149,6 @@ export const endRound = onCall<EndRoundRequest, Promise<EndRoundResponse>>(async
       .filter(pc => pc.rankValue === lowestRankValue)
       .map(pc => pc.playerId);
 
-    // Find the lowest card details for the action
-    const lowestCard = playerCards.find(pc => pc.rankValue === lowestRankValue)?.card || '';
-
     console.info("EndRound: Players with lowest card", {
       gameId,
       lowestRankValue,
@@ -219,10 +216,12 @@ export const endRound = onCall<EndRoundRequest, Promise<EndRoundResponse>>(async
 
     // Add the end round action to the batch
     const endRoundAction = createEndRoundAction(
-      userId, 
-      playersWithLowestCard, 
-      lowestCard, 
-      newDealer
+      {
+        playerId: userId, 
+        playersLost: playersWithLowestCard, 
+        newDealer,
+        gameEnded: playersWithLowestCard.length === gameData.players.length
+      }
     );
     addActionToBatch(batch, gameId, endRoundAction);
 

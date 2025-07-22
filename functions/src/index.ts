@@ -24,8 +24,8 @@ export { dealCards } from "./dealCards";
 export { endRound } from "./endRound";
 export { joinGame } from "./joinGame";
 export { leaveGame } from "./leaveGame";
+export { setPlayerOrder } from "./setPlayerOrder";
 export { startGame } from "./startGame";
 export { stick } from "./stick";
 export { swapCard } from "./swapCard";
-export { setPlayerOrder } from "./setPlayerOrder";
 

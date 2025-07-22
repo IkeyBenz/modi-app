@@ -1,8 +1,8 @@
 import { functions } from '@/config/firebase';
-import { SwapCardRequest, SwapCardResponse } from '@/functions/src/swapCard';
+import type { SwapCardRequest, SwapCardResponse } from '@/functions/src/swapCard/types';
+import { Alert } from '@/ui/components/AlertBanner';
 import { httpsCallable } from 'firebase/functions';
 import { useState } from 'react';
-import { Alert } from '@/ui/components/AlertBanner';
 
 const swapCardFunction = httpsCallable<SwapCardRequest, SwapCardResponse>(functions, 'swapCard');
 

@@ -45,13 +45,13 @@ export interface ReceiveCardAction extends BaseGameAction {
   card: CardID;
 }
 
-export interface EndRoundAction extends BaseGameAction {
+
+export type EndRoundAction = BaseGameAction & {
   type: ActionType.END_ROUND;
   playersLost: string[];
-  lowestCard: string;
-  newDealer: string;
-  roundEnded: true;
-}
+} & (
+  { gameEnded: true; newDealer?: never } | { gameEnded: false, newDealer: string }
+)
 
 export interface DeckReshuffleAction extends BaseGameAction {
   type: ActionType.DECK_RESHUFFLE;
@@ -65,13 +65,6 @@ export interface KungAction extends BaseGameAction {
   cardId: CardID;
 }
 
-/** @deprecated */
-export interface SpecialEventAction extends BaseGameAction {
-  type: ActionType.SPECIAL_EVENT;
-  targetPlayerId?: string;
-  eventType: 'modi' | 'dirty-dan';
-  specialEvent: true;
-}
 
 export interface PlayerJoinedAction extends BaseGameAction {
   type: ActionType.PLAYER_JOINED;
@@ -95,7 +88,6 @@ export type GameAction =
   | RevealCardsAction
   | EndRoundAction
   | DeckReshuffleAction
-  | SpecialEventAction
   | KungAction
   | PlayerJoinedAction
   | PlayerLeftAction
@@ -114,6 +106,4 @@ export enum ActionType {
   PLAYER_JOINED = 'player-joined',
   PLAYER_LEFT = 'player-left',
   RECEIVE_CARD = 'receive-card',
-  /** @deprecated */
-  SPECIAL_EVENT = 'special-event',
 } 

@@ -13,6 +13,7 @@ interface GameActionHandlers {
   trashCards?(): Promise<void>;
   revealCards?(playerCards: { [playerId: string]: CardID }): Promise<void>;
   kung?(action: KungAction): Promise<void>;
+  endGame?(): Promise<void>;
 }
 
 
@@ -79,13 +80,21 @@ export function useGameActions(gameId: string, handlers: GameActionHandlers) {
         return handlers.swapCards?.(action.playerId, action.targetPlayerId);
 
       case ActionType.REVEAL_CARDS:
-        return handlers.revealCards?.(action.playerCards);
+        await handlers.revealCards?.(action.playerCards);
+        
+        return Promise.resolve();
 
       case ActionType.DEALER_DRAW:
         return handlers.hitDeck?.(action);
 
       case ActionType.END_ROUND:
-        return handlers.trashCards?.().then(() => handlers?.moveDeck?.(action.newDealer));
+        await handlers.trashCards?.();
+        if (action.gameEnded) {
+          await handlers?.endGame?.();
+        } else { 
+          await handlers?.moveDeck?.(action.newDealer);
+        }
+        return Promise.resolve();
 
       case ActionType.RECEIVE_CARD:
         return handlers.revealCards?.({ [action.playerId]: action.card });
@@ -100,10 +109,6 @@ export function useGameActions(gameId: string, handlers: GameActionHandlers) {
 
       case ActionType.KUNG:
         return handlers.kung?.(action);
-
-      case ActionType.SPECIAL_EVENT:
-        console.warn("Special event action without action handler", action);
-        return Promise.resolve();
 
       case ActionType.PLAYER_JOINED:
         console.warn("Player joined action without action handler", action);
