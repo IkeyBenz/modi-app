@@ -7,11 +7,15 @@ export interface PlayerCircleProps {
   playerId: string;
   game: Game;
   style: ViewStyle;
+  /**
+   * Optional pan handlers to allow the circle to be dragged.
+   */
+  panHandlers?: any;
 }
 
-export function PlayerCircle({ playerId, game, style }: PlayerCircleProps) {
+export function PlayerCircle({ playerId, game, style, panHandlers }: PlayerCircleProps) {
   return (
-    <PlayerCircleWrapper game={game} style={style} playerId={playerId}>
+    <PlayerCircleWrapper game={game} style={style} playerId={playerId} panHandlers={panHandlers}>
       <Container
         color="gray"
         style={{
@@ -35,9 +39,10 @@ function PlayerCircleWrapper(
     children: React.ReactNode;
     style: ViewStyle;
     playerId: string;
+    panHandlers?: any;
   }>
 ) {
-  const { game, children, style, playerId } = props;
+  const { game, children, style, playerId, panHandlers } = props;
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -63,6 +68,7 @@ function PlayerCircleWrapper(
       onPress={() => setOpen((curr) => !curr)}
       activeOpacity={0.8}
       style={style}
+      {...panHandlers}
     >
       {children}
       {open && lives !== undefined && (
