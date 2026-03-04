@@ -1,6 +1,8 @@
 import _ from "lodash";
+import * as Haptics from "expo-haptics";
 import React, { useMemo, useRef } from "react";
 import {
+  Platform,
   StyleProp,
   TextStyle,
   TouchableOpacity,
@@ -28,6 +30,9 @@ interface ButtonProps {
   /** Shows a loading spinner instead of children when true. Also disables the button. */
   loading?: boolean;
 
+  /** Disable haptic feedback on press. Default is false (haptics enabled). */
+  disableHaptics?: boolean;
+
   onPress(): void;
 }
 
@@ -41,6 +46,7 @@ const Button: React.FC<ButtonProps & TouchableOpacityProps> = ({
   children,
   style,
   loading,
+  disableHaptics,
   ...props
 }) => {
   const defaultStyles = useMemo<StyleProp<ViewStyle>>(
@@ -59,8 +65,13 @@ const Button: React.FC<ButtonProps & TouchableOpacityProps> = ({
   const onPressRef = useRef(onPress);
   onPressRef.current = onPress;
   const handlePress = useMemo(() => {
-    return _.throttle(() => onPressRef.current?.(), 600);
-  }, []);
+    return _.throttle(() => {
+      if (!disableHaptics && Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      onPressRef.current?.();
+    }, 600);
+  }, [disableHaptics]);
 
   return (
     <TouchableOpacity
