@@ -16,7 +16,7 @@ if (Platform.OS !== 'web') {
   Constants = require('expo-constants').default;
   
   // Configure how notifications appear when app is in foreground
-  Notifications.setNotificationHandler({
+  Notifications!.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
