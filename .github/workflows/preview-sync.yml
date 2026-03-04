@@ -1,0 +1,144 @@
+name: Preview sync (Heroku Review App -> Vercel)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.number }}
+      HEROKU_PIPELINE_ID: ${{ secrets.HEROKU_PIPELINE_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
+      STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_PIPELINE_ID: ${{ secrets.HEROKU_PIPELINE_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for v in HEROKU_API_KEY HEROKU_PIPELINE_ID VERCEL_TOKEN; do
+            if [ -z "${!v:-}" ] || [ "${!v}" = "null" ]; then
+              missing+=("$v")
+            fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Ensure jq is available
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Wait for Heroku Review App and get URL
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_PARENT_APP_NAME: ${{ secrets.HEROKU_PARENT_APP_NAME }}
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer ${HEROKU_API_KEY}"
+          ACC="Accept: application/vnd.heroku+json; version=3.review-apps"
+          API_BASE="https://api.heroku.com"
+          echo "Polling Heroku for review app for PR #${PR_NUMBER} on pipeline ${HEROKU_PIPELINE_ID}"
+          # Poll up to ~10 minutes
+          for i in {1..120}; do
+            resp=$(curl -sS -H "$AUTH" -H "$ACC" \
+              "${API_BASE}/pipelines/${HEROKU_PIPELINE_ID}/review-apps")
+            # Ensure response is an array before attempting to index
+            if echo "$resp" | jq -e 'type=="array"' >/dev/null 2>&1; then
+              app_id=$(echo "$resp" | jq -r --arg pr "$PR_NUMBER" 'map(select((.pr_number|tostring) == $pr)) | (.[0].app.id // empty)')
+              status=$(echo "$resp" | jq -r --arg pr "$PR_NUMBER" 'map(select((.pr_number|tostring) == $pr)) | (.[0].status // empty)')
+            else
+              echo "::warning::Unexpected Heroku response (not an array). Raw response: $resp"
+              app_id=""
+              status=""
+            fi
+            echo "Heroku review app status: app_id='${app_id:-}', status='${status:-}' (attempt $i)"
+            if [ -n "${app_id:-}" ] && [ "$status" = "created" ]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if [ -z "${app_id:-}" ]; then
+            # Try fallback to parent app URL if provided
+            if [ -n "${HEROKU_PARENT_APP_NAME:-}" ] && [ "${HEROKU_PARENT_APP_NAME}" != "null" ]; then
+              echo "No review app yet; fetching parent app (${HEROKU_PARENT_APP_NAME}) web_url as fallback"
+              parent=$(curl -sS -H "$AUTH" -H "Accept: application/vnd.heroku+json; version=3" \
+                "${API_BASE}/apps/${HEROKU_PARENT_APP_NAME}")
+              parent_url=$(echo "$parent" | jq -r ".web_url" | sed 's#/$##')
+              if [ -n "${parent_url:-}" ] && [ "${parent_url}" != "null" ]; then
+                echo "API_PREVIEW_URL=${parent_url}" >> $GITHUB_ENV
+                echo "FALLBACK_USED=true" >> $GITHUB_ENV
+              else
+                echo "::warning::Could not resolve parent app URL."
+              fi
+            fi
+            # Final fallback to STAGING_API_URL if set
+            if [ -z "${API_PREVIEW_URL:-}" ]; then
+              if [ -n "${STAGING_API_URL:-}" ] && [ "${STAGING_API_URL}" != "null" ]; then
+                echo "No review app; falling back to STAGING_API_URL"
+                echo "API_PREVIEW_URL=${STAGING_API_URL}" >> $GITHUB_ENV
+                echo "FALLBACK_USED=true" >> $GITHUB_ENV
+              else
+                echo "::error::Heroku review app not ready and no fallback provided. Set HEROKU_PARENT_APP_NAME or STAGING_API_URL as a secret, or ensure Review Apps are enabled for the pipeline." >&2
+                exit 1
+              fi
+            fi
+          else
+            app=$(curl -sS -H "$AUTH" -H "Accept: application/vnd.heroku+json; version=3" \
+              "${API_BASE}/apps/${app_id}")
+            url=$(echo "$app" | jq -r ".web_url" | sed 's#/$##')
+            echo "API_PREVIEW_URL=${url}" >> $GITHUB_ENV
+            echo "FALLBACK_USED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Resolve Vercel project name
+        env:
+          VERCEL_PROJECT_SECRET: ${{ secrets.VERCEL_PROJECT }}
+        run: |
+          set -euo pipefail
+          PROJ="$VERCEL_PROJECT_SECRET"
+          if [ -z "${PROJ:-}" ] || [ "$PROJ" = "null" ]; then
+            PROJ="${{ github.event.repository.name }}"
+          fi
+          echo "VERCEL_PROJECT_RESOLVED=$PROJ" >> $GITHUB_ENV
+
+      - name: Link/pull Vercel project settings
+        run: vercel pull --yes --environment=preview --token "$VERCEL_TOKEN" ${VERCEL_SCOPE:+--scope "$VERCEL_SCOPE"} --project "$VERCEL_PROJECT_RESOLVED"
+
+      - name: Deploy Vercel preview wired to API review
+        id: vercel_deploy
+        run: |
+          set -euo pipefail
+          OUT=$(vercel deploy --token "$VERCEL_TOKEN" ${VERCEL_SCOPE:+--scope "$VERCEL_SCOPE"} --project "$VERCEL_PROJECT_RESOLVED" --yes \
+            --env EXPO_PUBLIC_API_BASE_URL="${API_PREVIEW_URL}" \
+            --build-env EXPO_PUBLIC_API_BASE_URL="${API_PREVIEW_URL}" \
+            --json)
+          URL=$(echo "$OUT" | jq -r .url)
+          echo "VERCEL_URL=${URL}" >> $GITHUB_ENV
+          echo "Vercel deployment: ${URL}"
+
+      - name: Comment URLs on PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.number }}
+          body: |
+            ✅ Preview environments ready:
+            - API: ${{ env.API_PREVIEW_URL }}${{ env.FALLBACK_USED == 'true' && ' (fallback to staging)' || '' }}
+            - Frontend (Vercel): https://${{ env.VERCEL_URL }}
