@@ -1,4 +1,5 @@
 import type { InitialGame } from "@/api/src/types";
+import { useHaptics } from "@/hooks/useHaptics";
 import { useUpdateGameSettings } from "@/hooks/useUpdateGameSettings";
 import { SettingsModal } from "@/ui/components/SettingsModal";
 import { Icon, Text } from "@/ui/elements";
@@ -14,9 +15,11 @@ export function GameSettingsButton({ game }: GameSettingsButtonProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { updateSettings, isUpdating } = useUpdateGameSettings();
   const [localLives, setLocalLives] = useState(game.initialLives);
+  const { trigger } = useHaptics();
 
   const handleLivesChange = (newValue: number) => {
     if (newValue < 1 || newValue > 5) return;
+    trigger("selection");
     setLocalLives(newValue);
     updateSettings({ gameId: game.gameId, initialLives: newValue });
   };
@@ -24,7 +27,10 @@ export function GameSettingsButton({ game }: GameSettingsButtonProps) {
   return (
     <>
       <Pressable
-        onPress={() => setIsModalVisible(true)}
+        onPress={() => {
+          trigger("light");
+          setIsModalVisible(true);
+        }}
         style={styles.settingsButton}
       >
         <Icon name="settings" size={22} color={colors.white} />
