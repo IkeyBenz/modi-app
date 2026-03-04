@@ -8,6 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 
+import { useHaptics } from "@/hooks/useHaptics";
 import { LoadingSpinner } from "@/ui/elements/LoadingSpinner";
 import Text from "@/ui/elements/Text";
 import { ColorName, colors } from "@/ui/styles";
@@ -28,6 +29,9 @@ interface ButtonProps {
   /** Shows a loading spinner instead of children when true. Also disables the button. */
   loading?: boolean;
 
+  /** Disable haptic feedback on press. Default is false (haptics enabled). */
+  disableHaptics?: boolean;
+
   onPress(): void;
 }
 
@@ -41,8 +45,11 @@ const Button: React.FC<ButtonProps & TouchableOpacityProps> = ({
   children,
   style,
   loading,
+  disableHaptics,
   ...props
 }) => {
+  const { trigger } = useHaptics();
+
   const defaultStyles = useMemo<StyleProp<ViewStyle>>(
     () => ({
       backgroundColor: color ? colors[color] : undefined,
@@ -59,8 +66,13 @@ const Button: React.FC<ButtonProps & TouchableOpacityProps> = ({
   const onPressRef = useRef(onPress);
   onPressRef.current = onPress;
   const handlePress = useMemo(() => {
-    return _.throttle(() => onPressRef.current?.(), 600);
-  }, []);
+    return _.throttle(() => {
+      if (!disableHaptics) {
+        trigger("light");
+      }
+      onPressRef.current?.();
+    }, 600);
+  }, [disableHaptics, trigger]);
 
   return (
     <TouchableOpacity

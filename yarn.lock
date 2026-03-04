@@ -4586,6 +4586,11 @@ expo-font@~13.3.2:
   dependencies:
     fontfaceobserver "^2.1.0"
 
+expo-haptics@^55.0.8:
+  version "55.0.8"
+  resolved "https://registry.yarnpkg.com/expo-haptics/-/expo-haptics-55.0.8.tgz#9ccf3527f4622d5e267a7820da43075a257777b1"
+  integrity sha512-yVR6EsQwl1WuhFITc0PpfI/7dsBdjK/F2YA8xB80UUW9iTa+Tqz21FpH4n/vtbargpzFxkhl5WNYMa419+QWFQ==
+
 expo-image@~2.4.1:
   version "2.4.1"
   resolved "https://registry.yarnpkg.com/expo-image/-/expo-image-2.4.1.tgz#c3f84795e33ea98d833fc4dad11ad750ea290b3e"
@@ -8730,6 +8735,11 @@ wcwidth@^1.0.1:
   integrity sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==
   dependencies:
     defaults "^1.0.3"
+
+web-haptics@^0.0.6:
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/web-haptics/-/web-haptics-0.0.6.tgz#e27060aff15d6e4ef4b4cbe084711f0b06e6a58d"
+  integrity sha512-eCzcf1LDi20+Fr0x9V3OkX92k0gxEQXaHajmhXHitsnk6SxPeshv8TBtBRqxyst8HI1uf2FyFVE7QS3jo1gkrw==
 
 web-vitals@^4.2.4:
   version "4.2.4"
