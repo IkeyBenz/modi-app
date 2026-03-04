@@ -1,8 +1,6 @@
 import _ from "lodash";
-import * as Haptics from "expo-haptics";
 import React, { useMemo, useRef } from "react";
 import {
-  Platform,
   StyleProp,
   TextStyle,
   TouchableOpacity,
@@ -10,6 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 
+import { useHaptics } from "@/hooks/useHaptics";
 import { LoadingSpinner } from "@/ui/elements/LoadingSpinner";
 import Text from "@/ui/elements/Text";
 import { ColorName, colors } from "@/ui/styles";
@@ -49,6 +48,8 @@ const Button: React.FC<ButtonProps & TouchableOpacityProps> = ({
   disableHaptics,
   ...props
 }) => {
+  const { trigger } = useHaptics();
+
   const defaultStyles = useMemo<StyleProp<ViewStyle>>(
     () => ({
       backgroundColor: color ? colors[color] : undefined,
@@ -66,12 +67,12 @@ const Button: React.FC<ButtonProps & TouchableOpacityProps> = ({
   onPressRef.current = onPress;
   const handlePress = useMemo(() => {
     return _.throttle(() => {
-      if (!disableHaptics && Platform.OS !== "web") {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (!disableHaptics) {
+        trigger("light");
       }
       onPressRef.current?.();
     }, 600);
-  }, [disableHaptics]);
+  }, [disableHaptics, trigger]);
 
   return (
     <TouchableOpacity
